@@ -10,8 +10,8 @@ import {
 import { CATEGORIES_QUERY } from "@/sanity/lib/queries/categories";
 import { VENUE_NAME_BY_ID_QUERY } from "@/sanity/lib/queries/venues";
 import { USER_BOOKED_SESSION_IDS_QUERY } from "@/sanity/lib/queries";
-import { ClassesMapSidebar } from "@/components/app/maps/ClassesMapSidebar";
 import { ClassesContent } from "@/components/app/classes/ClassesContent";
+import { ClassesMapSidebar } from "@/components/app/maps/ClassesMapSidebar";
 import { ClassSearch } from "@/components/app/classes/ClassSearch";
 import { ClassesFilters } from "@/components/app/classes/ClassesFilters";
 import { getUserPreferences } from "@/lib/actions/profile";
@@ -43,7 +43,6 @@ export default async function ClassesPage({ searchParams }: ClassesPageProps) {
   const categoryIds = categoryParam
     ? categoryParam.split(",").filter(Boolean)
     : [];
-
   const tierLevels = tierParam ? tierParam.split(",").filter(Boolean) : [];
 
   // Get user preferences first - needed for bounding box calculation
@@ -119,7 +118,6 @@ export default async function ClassesPage({ searchParams }: ClassesPageProps) {
   const allSessions = sessionsResult.data;
   const categories = categoriesResult.data;
   const venueName = venueNameResult.data?.name || null;
-
   // Filter out null values from booked session IDs
   const bookedIds: (string | null)[] = bookedSessionsResult.data || [];
   const filteredBookedIds = bookedIds.filter((id): id is string => id !== null);

@@ -11,8 +11,8 @@ export const UPCOMING_SESSIONS_QUERY = defineQuery(`*[
   maxCapacity,
   status,
   "currentBookings": count(*[
-    _type == "booking" 
-    && classSession._ref == ^._id 
+    _type == "booking"
+    && classSession._ref == ^._id
     && status == "confirmed"
   ]),
   activity->{
@@ -47,8 +47,8 @@ export const SESSION_BY_ID_QUERY = defineQuery(`*[
   maxCapacity,
   status,
   "currentBookings": count(*[
-    _type == "booking" 
-    && classSession._ref == ^._id 
+    _type == "booking"
+    && classSession._ref == ^._id
     && status == "confirmed"
   ]),
   activity->{
@@ -89,8 +89,8 @@ export const SESSIONS_BY_ACTIVITY_QUERY = defineQuery(`*[
   maxCapacity,
   status,
   "currentBookings": count(*[
-    _type == "booking" 
-    && classSession._ref == ^._id 
+    _type == "booking"
+    && classSession._ref == ^._id
     && status == "confirmed"
   ]),
   venue->{
@@ -128,8 +128,8 @@ export const FILTERED_SESSIONS_QUERY = defineQuery(`*[
   maxCapacity,
   status,
   "currentBookings": count(*[
-    _type == "booking" 
-    && classSession._ref == ^._id 
+    _type == "booking"
+    && classSession._ref == ^._id
     && status == "confirmed"
   ]),
   activity->{
@@ -160,6 +160,9 @@ export const FILTERED_SESSIONS_QUERY = defineQuery(`*[
 }`);
 
 // Search sessions by activity name or instructor name within a geographic bounding box
+// Uses a pre-formatted search pattern (containing wildcards) to avoid GROQ string
+// concatenation quirks. Pass $searchPattern as "*query*" for contains-style search
+// or "query*" for prefix search.
 // Same bounding box approach as FILTERED_SESSIONS_QUERY - search is scoped to user's area
 export const SEARCH_SESSIONS_QUERY = defineQuery(`*[
   _type == "classSession"
@@ -171,8 +174,8 @@ export const SEARCH_SESSIONS_QUERY = defineQuery(`*[
   && venue->address.lng >= $minLng
   && venue->address.lng <= $maxLng
   && (
-    activity->name match $searchTerm + "*"
-    || activity->instructor match $searchTerm + "*"
+    activity->name match $searchPattern
+    || activity->instructor match $searchPattern
   )
 ] | order(startTime asc) {
   _id,
@@ -180,8 +183,8 @@ export const SEARCH_SESSIONS_QUERY = defineQuery(`*[
   maxCapacity,
   status,
   "currentBookings": count(*[
-    _type == "booking" 
-    && classSession._ref == ^._id 
+    _type == "booking"
+    && classSession._ref == ^._id
     && status == "confirmed"
   ]),
   activity->{

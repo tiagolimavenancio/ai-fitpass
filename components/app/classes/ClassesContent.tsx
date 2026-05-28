@@ -113,7 +113,7 @@ export function ClassesContent({
 
   const totalSessions = groupedSessions.reduce(
     (acc, [, sessions]) => acc + sessions.length,
-    0
+    0,
   );
 
   return (
@@ -130,7 +130,7 @@ export function ClassesContent({
           {[...dayKeys].map((dateKey) => {
             // This is the sessions for the day
             const sessionsForDay = groupedSessions.find(
-              ([key]) => key === dateKey
+              ([key]) => key === dateKey,
             )?.[1];
             // This is the number of sessions for the day
             const count = sessionsForDay?.length || 0;
@@ -197,4 +197,3 @@ export function ClassesContent({
     </div>
   );
 }
-
