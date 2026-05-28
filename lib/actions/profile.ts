@@ -158,8 +158,8 @@ export async function getUserPreferences(): Promise<ProfilePreferences | null> {
     }
 
     return {
-      location: userProfile.data.location,
-      searchRadius: userProfile.data.searchRadius,
+      location: userProfile.data?.location,
+      searchRadius: userProfile.data?.searchRadius,
     };
   } catch (error) {
     console.error("Get preferences error:", error);

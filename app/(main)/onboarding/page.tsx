@@ -10,6 +10,7 @@ import {
   ArrowRightIcon,
   Check,
   Dumbbell,
+  Loader2Icon,
   MapPinIcon,
   TargetIcon,
 } from "lucide-react";

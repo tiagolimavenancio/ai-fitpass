@@ -15,43 +15,41 @@ interface AddressValue {
   lng?: number;
 }
 
-interface MapboxFeature {
-  place_name: string;
-  center: [number, number];
-  context?: Array<{
-    id: string;
-    text: string;
-  }>;
-  properties?: {
-    address?: string;
-  };
-  text?: string;
+interface GeoapifyProperties {
+  formatted: string;
+  address_line1?: string;
+  city?: string;
+  country?: string;
+  postcode?: string;
+  state?: string;
+  lon: number;
+  lat: number;
+  place_id: string;
 }
 
-function extractAddressComponents(feature: MapboxFeature) {
-  const context = feature.context || [];
-  const street = feature.properties?.address || feature.text || "";
-  let city = "";
-  let postcode = "";
-  let country = "";
+interface GeoapifyFeature {
+  type: "Feature";
+  properties: GeoapifyProperties;
+  geometry: {
+    type: "Point";
+    coordinates: [number, number];
+  };
+  bbox?: [number, number, number, number];
+}
 
-  for (const component of context) {
-    if (component.id.startsWith("place")) {
-      city = component.text;
-    } else if (component.id.startsWith("postcode")) {
-      postcode = component.text;
-    } else if (component.id.startsWith("country")) {
-      country = component.text;
-    }
-  }
-
-  return { street, city, postcode, country };
+function extractAddressComponents(properties: GeoapifyProperties) {
+  return {
+    street: properties.address_line1 || "",
+    city: properties.city || "",
+    postcode: properties.postcode || "",
+    country: properties.country || "",
+  };
 }
 
 export function MapboxAddressInput(props: ObjectInputProps) {
   const { value, onChange } = props;
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
+  const [suggestions, setSuggestions] = useState<GeoapifyFeature[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const searchAddress = useCallback(async (searchQuery: string) => {
@@ -60,18 +58,18 @@ export function MapboxAddressInput(props: ObjectInputProps) {
       return;
     }
 
-    const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+    const token = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
     if (!token) {
-      console.error("Mapbox access token not found");
+      console.error("Geoapify API key not configured");
       return;
     }
 
     setIsLoading(true);
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+        `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(
           searchQuery,
-        )}.json?access_token=${token}&types=address,place`,
+        )}&apiKey=${token}`,
       );
       const data = await response.json();
       setSuggestions(data.features || []);
@@ -98,22 +96,21 @@ export function MapboxAddressInput(props: ObjectInputProps) {
   );
 
   const handleSelect = useCallback(
-    (feature: MapboxFeature) => {
-      const components = extractAddressComponents(feature);
-      const [lng, lat] = feature.center;
+    (feature: GeoapifyFeature) => {
+      const { properties, geometry } = feature;
+      const components = extractAddressComponents(properties);
+      const [lng, lat] = geometry.coordinates;
 
-      // Set address object with coordinates
       onChange(
         set({
-          fullAddress: feature.place_name,
+          fullAddress: properties.formatted,
           ...components,
           lat,
           lng,
         }),
       );
 
-      // Clear suggestions and set query to selected address
-      setQuery(feature.place_name);
+      setQuery(properties.formatted);
       setSuggestions([]);
     },
     [onChange],
@@ -146,12 +143,12 @@ export function MapboxAddressInput(props: ObjectInputProps) {
           <Stack space={2}>
             {suggestions.map((suggestion) => (
               <Button
-                key={suggestion.place_name}
+                key={suggestion.properties.place_id}
                 mode="ghost"
                 onClick={() => handleSelect(suggestion)}
                 style={{ textAlign: "left", width: "100%" }}
               >
-                <Text size={1}>{suggestion.place_name}</Text>
+                <Text size={1}>{suggestion.properties.formatted}</Text>
               </Button>
             ))}
           </Stack>

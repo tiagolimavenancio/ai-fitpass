@@ -15,47 +15,35 @@ export interface AddressResult {
   country?: string;
 }
 
-interface MapboxContext {
-  id: string;
-  text: string;
+interface GeoapifyProperties {
+  formatted: string;
+  address_line1?: string;
+  city?: string;
+  country?: string;
+  postcode?: string;
+  state?: string;
+  lon: number;
+  lat: number;
+  place_id: string;
 }
 
-interface MapboxFeature {
-  place_name: string;
-  center: [number, number]; // [lng, lat]
-  text?: string;
-  address?: string;
-  context?: MapboxContext[];
+interface GeoapifyFeature {
+  type: "Feature";
+  properties: GeoapifyProperties;
+  geometry: {
+    type: "Point";
+    coordinates: [number, number];
+  };
+  bbox?: [number, number, number, number];
 }
 
-function extractAddressComponents(feature: MapboxFeature) {
-  const context = feature.context || [];
-  let street = "";
-  let city = "";
-  let postcode = "";
-  let country = "";
-
-  // Build street from address number and street name
-  if (feature.address && feature.text) {
-    street = `${feature.address} ${feature.text}`;
-  } else if (feature.text) {
-    street = feature.text;
-  }
-
-  // Extract components from context
-  for (const item of context) {
-    if (item.id.startsWith("place")) {
-      city = item.text;
-    } else if (item.id.startsWith("locality")) {
-      city = city || item.text;
-    } else if (item.id.startsWith("postcode")) {
-      postcode = item.text;
-    } else if (item.id.startsWith("country")) {
-      country = item.text;
-    }
-  }
-
-  return { street, city, postcode, country };
+function extractAddressComponents(properties: GeoapifyProperties) {
+  return {
+    street: properties.address_line1 || "",
+    city: properties.city || "",
+    postcode: properties.postcode || "",
+    country: properties.country || "",
+  };
 }
 
 interface AddressSearchProps {
@@ -72,7 +60,7 @@ export function AddressSearch({
   className,
 }: AddressSearchProps) {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
+  const [suggestions, setSuggestions] = useState<GeoapifyFeature[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -84,18 +72,18 @@ export function AddressSearch({
       return;
     }
 
-    const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+    const token = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
     if (!token) {
-      console.error("Mapbox access token not configured");
+      console.error("Geoapify API key not configured");
       return;
     }
 
     setIsLoading(true);
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+        `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(
           searchQuery,
-        )}.json?access_token=${token}&types=address,place,locality,neighborhood`,
+        )}&apiKey=${token}`,
       );
       const data = await response.json();
       setSuggestions(data.features || []);
@@ -116,16 +104,17 @@ export function AddressSearch({
     setQuery(e.target.value);
   };
 
-  const handleSelect = (feature: MapboxFeature) => {
-    const [lng, lat] = feature.center;
-    const components = extractAddressComponents(feature);
+  const handleSelect = (feature: GeoapifyFeature) => {
+    const { properties, geometry } = feature;
+    const [lng, lat] = geometry.coordinates;
+    const components = extractAddressComponents(properties);
     onChange({
       lat,
       lng,
-      address: feature.place_name,
+      address: properties.formatted,
       ...components,
     });
-    setQuery(feature.place_name);
+    setQuery(properties.formatted);
     setSuggestions([]);
     setIsFocused(false);
   };
@@ -170,13 +159,13 @@ export function AddressSearch({
         <div className="absolute z-50 mt-1 w-full rounded-lg border bg-popover shadow-lg">
           {suggestions.map((suggestion) => (
             <button
-              key={suggestion.place_name}
+              key={suggestion.properties.place_id}
               type="button"
               onClick={() => handleSelect(suggestion)}
               className="flex w-full items-start gap-3 px-4 py-3 text-left text-sm first:rounded-t-lg last:rounded-b-lg hover:bg-accent"
             >
               <MapPinIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="line-clamp-2">{suggestion.place_name}</span>
+              <span className="line-clamp-2">{suggestion.properties.formatted}</span>
             </button>
           ))}
         </div>

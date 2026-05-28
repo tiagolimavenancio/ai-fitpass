@@ -13,8 +13,8 @@ export default function MainLayout({
       <OnboardingGuard>
         <AppHeader />
         {children}
-        <SanityLive />
       </OnboardingGuard>
+      <SanityLive />
     </ClerkProvider>
   );
 }
