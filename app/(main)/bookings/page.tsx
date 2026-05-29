@@ -27,11 +27,6 @@ import { Button } from "@/components/ui/button";
 
 export default async function BookingsPage() {
   const { userId } = await auth();
-
-  if (!userId) {
-    redirect("/sign-in");
-  }
-
   const [{ data: bookings }, usageStats] = await Promise.all([
     sanityFetch({ query: USER_BOOKINGS_QUERY, params: { clerkId: userId } }),
     getUsageStats(userId),
